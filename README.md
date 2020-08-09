@@ -1,5 +1,5 @@
 # minesp
-An ESP8266 (unstable) minimal minecraft Server.
+An ESP8266 (unstable) minimal minecraft 1.16.1 Server.
 
 # Features
 
