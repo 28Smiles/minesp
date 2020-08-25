@@ -51,53 +51,28 @@ namespace packet {
             } while (uvalue != 0);
         }
 
+        template<typename type> void write(Stream &stream, const type &value) {
+            const byte *ptr = (byte*) &value;
+            for (int i = sizeof(type) - 1; i >= 0; --i) {
+                stream.write(ptr[i]);
+            }
+        }
+
+        template<typename type> type read(Stream &stream) {
+            union {
+                type value;
+                byte bytes[sizeof(type)];
+            } v;
+
+            for (int i = sizeof(type) - 1; i >= 0; --i) {
+                v.bytes[i] = stream.read();
+            }
+
+            return v.value;
+        }
+
         void writeBoolean(Stream &stream, const bool &value) {
             stream.write(value ? 0x01 : 0x00);
-        }
-
-        void writeShort(Stream &stream, const short &value) {
-            stream.write(((byte *) &value)[1]);
-            stream.write(((byte *) &value)[0]);
-        }
-
-        void writeInt(Stream &stream, const int &value) {
-            stream.write(((byte *) &value)[3]);
-            stream.write(((byte *) &value)[2]);
-            stream.write(((byte *) &value)[1]);
-            stream.write(((byte *) &value)[0]);
-        }
-
-        void writeFloat(Stream &stream, const float &value) {
-            stream.write(((byte *) &value)[3]);
-            stream.write(((byte *) &value)[2]);
-            stream.write(((byte *) &value)[1]);
-            stream.write(((byte *) &value)[0]);
-        }
-
-        void writeDouble(Stream &stream, const double &value) {
-            stream.write(((byte *) &value)[7]);
-            stream.write(((byte *) &value)[6]);
-            stream.write(((byte *) &value)[5]);
-            stream.write(((byte *) &value)[4]);
-            stream.write(((byte *) &value)[3]);
-            stream.write(((byte *) &value)[2]);
-            stream.write(((byte *) &value)[1]);
-            stream.write(((byte *) &value)[0]);
-        }
-
-        void writeLong(Stream &stream, const long long &value) {
-            stream.write(((byte *) &value)[7]);
-            stream.write(((byte *) &value)[6]);
-            stream.write(((byte *) &value)[5]);
-            stream.write(((byte *) &value)[4]);
-            stream.write(((byte *) &value)[3]);
-            stream.write(((byte *) &value)[2]);
-            stream.write(((byte *) &value)[1]);
-            stream.write(((byte *) &value)[0]);
-        }
-
-        void writeUUID(Stream &stream, const uuid &value) {
-            stream.write(value, 16);
         }
 
         void writeString(Stream &stream, const String &value) {
@@ -112,38 +87,6 @@ namespace packet {
             buffer[size] = '\0';
 
             return String(buffer);
-        }
-
-        float readFloat(Stream &stream) {
-            union {
-                float value;
-                byte bytes[4];
-            } v;
-
-            v.bytes[3] = stream.read();
-            v.bytes[2] = stream.read();
-            v.bytes[1] = stream.read();
-            v.bytes[0] = stream.read();
-
-            return v.value;
-        }
-
-        double readDouble(Stream &stream) {
-            union {
-                double value;
-                byte bytes[8];
-            } v;
-
-            v.bytes[7] = stream.read();
-            v.bytes[6] = stream.read();
-            v.bytes[5] = stream.read();
-            v.bytes[4] = stream.read();
-            v.bytes[3] = stream.read();
-            v.bytes[2] = stream.read();
-            v.bytes[1] = stream.read();
-            v.bytes[0] = stream.read();
-
-            return v.value;
         }
     }
 
@@ -216,7 +159,7 @@ namespace packet {
         const byte size = username.length() + sizeof(util::uuid) + 2;
         stream.write(size);
         stream.write(0x02);
-        util::writeUUID(stream, uuid);
+        util::write(stream, uuid);
         util::writeString(stream, username);
     }
 
@@ -244,7 +187,7 @@ namespace packet {
 
         util::writeVarInt(stream, size);
         stream.write(0x25);
-        util::writeInt(stream, entityId);
+        util::write(stream, entityId);
         stream.write(gamemode);
         stream.write(prevGamemode);
         stream.write(1);
@@ -291,7 +234,7 @@ namespace packet {
 
         util::writeVarInt(stream, size);
         stream.write(0x25);
-        util::writeInt(stream, entityId);
+        util::write(stream, entityId);
         stream.write(gamemode);
         stream.write(prevGamemode);
         stream.write(1);
@@ -318,11 +261,11 @@ namespace packet {
                    const byte flags = 0x00) {
         stream.write(35);
         stream.write(0x35);
-        util::writeDouble(stream, x);
-        util::writeDouble(stream, y);
-        util::writeDouble(stream, z);
-        util::writeFloat(stream, yaw);
-        util::writeFloat(stream, pitch);
+        util::write(stream, x);
+        util::write(stream, y);
+        util::write(stream, z);
+        util::write(stream, yaw);
+        util::write(stream, pitch);
         stream.write(flags);
         stream.write(tpId);
     }
@@ -335,8 +278,8 @@ namespace packet {
         int size = 6493;
         util::writeVarInt(stream, size);
         stream.write(0x21);
-        util::writeInt(stream, x);
-        util::writeInt(stream, y);
+        util::write(stream, x);
+        util::write(stream, y);
         util::writeBoolean(stream, fullChunk);
         util::writeBoolean(stream, ignoreOld);
         stream.write(sections);
@@ -365,7 +308,7 @@ namespace packet {
         int chunkSize = 2057;
         util::writeVarInt(stream, chunkSize);
         short blockCount = 4096;
-        util::writeShort(stream, blockCount);
+        util::write(stream, blockCount);
         stream.write(4); // Bits per Block
         // PALETTE
         stream.write(3);
@@ -398,8 +341,8 @@ namespace packet {
         int size = 4435;
         util::writeVarInt(stream, size);
         stream.write(0x21);
-        util::writeInt(stream, x);
-        util::writeInt(stream, y);
+        util::write(stream, x);
+        util::write(stream, y);
         util::writeBoolean(stream, fullChunk);
         util::writeBoolean(stream, ignoreOld);
         stream.write(0x00); // No section
@@ -431,26 +374,26 @@ namespace packet {
     }
 
     void rPlayerPosition(Stream &stream, game::Player &player) {
-        player.posX = util::readDouble(stream);
-        player.posY = util::readDouble(stream);
-        player.posZ = util::readDouble(stream);
+        player.posX = util::read<double>(stream);
+        player.posY = util::read<double>(stream);
+        player.posZ = util::read<double>(stream);
         stream.read(); // ON GROUND
     }
 
     void rPlayerPositionAndRotation(Stream &stream, game::Player &player) {
-        player.posX = util::readDouble(stream);
-        player.posY = util::readDouble(stream);
-        player.posZ = util::readDouble(stream);
+        player.posX = util::read<double>(stream);
+        player.posY = util::read<double>(stream);
+        player.posZ = util::read<double>(stream);
 
-        player.yaw = util::readFloat(stream);
-        player.pitch = util::readFloat(stream);
+        player.yaw = util::read<float>(stream);
+        player.pitch = util::read<float>(stream);
 
         stream.read(); // ON GROUND
     }
 
     void rPlayerRotation(Stream &stream, game::Player &player) {
-        player.yaw = util::readFloat(stream);
-        player.pitch = util::readFloat(stream);
+        player.yaw = util::read<float>(stream);
+        player.pitch = util::read<float>(stream);
 
         stream.read(); // ON GROUND
     }
@@ -463,17 +406,17 @@ namespace packet {
         stream.write(9);
         stream.write(0x20);
         long long i = 0x42;
-        util::writeLong(stream, i);
+        util::write(stream, i);
     }
 
     void wSpawnPlayer(Stream &stream, const game::Player &player) {
         stream.write(44);
         stream.write(0x04);
         stream.write(player.eid);
-        util::writeUUID(stream, playerId);
-        util::writeDouble(stream, player.posX);
-        util::writeDouble(stream, player.posY);
-        util::writeDouble(stream, player.posZ);
+        util::write(stream, playerId);
+        util::write(stream, player.posX);
+        util::write(stream, player.posY);
+        util::write(stream, player.posZ);
         stream.write(((int) abs(player.yaw / 360 / (1./256.))) % 256);
         stream.write(((int) abs(player.pitch / 360 / (1./256.))) % 256);
     }
@@ -483,11 +426,11 @@ namespace packet {
         stream.write(0x28);
         stream.write(playerOld.eid);
         short dX = (playerNew.posX * 32 - playerOld.posX * 32) * 128;
-        util::writeShort(stream, dX);
+        util::write(stream, dX);
         short dY = (playerNew.posY * 32 - playerOld.posY * 32) * 128;
-        util::writeShort(stream, dY);
+        util::write(stream, dY);
         short dZ = (playerNew.posZ * 32 - playerOld.posZ * 32) * 128;
-        util::writeShort(stream, dZ);
+        util::write(stream, dZ);
         stream.write(0x00);
     }
 
@@ -496,11 +439,11 @@ namespace packet {
         stream.write(0x29);
         stream.write(playerOld.eid);
         short dX = (playerNew.posX * 32 - playerOld.posX * 32) * 128;
-        util::writeShort(stream, dX);
+        util::write(stream, dX);
         short dY = (playerNew.posY * 32 - playerOld.posY * 32) * 128;
-        util::writeShort(stream, dY);
+        util::write(stream, dY);
         short dZ = (playerNew.posZ * 32 - playerOld.posZ * 32) * 128;
-        util::writeShort(stream, dZ);
+        util::write(stream, dZ);
         stream.write(((int) abs(playerNew.yaw / 360 / (1./256.))) % 256);
         stream.write(((int) abs(playerNew.pitch / 360 / (1./256.))) % 256);
         stream.write(0x00);
@@ -545,7 +488,7 @@ namespace packet {
         stream.write(0);
         stream.write(players.size());
         for (unsigned int i = 0; i < players.size(); ++i) {
-            util::writeUUID(stream, playerId);
+            util::write(stream, playerId);
             util::writeString(stream, players.begin()[i].name);
             stream.write(1);
             util::writeString(stream, "textures");
@@ -569,7 +512,7 @@ namespace packet {
         stream.write(0);
         stream.write(length);
         for (int i = 0; i < length; ++i) {
-            util::writeUUID(stream, playerId);
+            util::write(stream, playerId);
             util::writeString(stream, players[i].name);
             stream.write(1);
             util::writeString(stream, "textures");
